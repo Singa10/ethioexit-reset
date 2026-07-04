@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reset Password — EthioExit</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body {
+    font-family: -apple-system, Roboto, Arial, sans-serif;
+    background: #1A1A2E;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  .card {
+    background: #22223A;
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 380px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: #FFC107;
+  }
+  p { font-size: 14px; color: #ccc; margin-bottom: 20px; }
+  input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background: #1A1A2E;
+    color: #fff;
+    font-size: 15px;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+  }
+  button {
+    width: 100%;
+    padding: 13px;
+    border-radius: 8px;
+    border: none;
+    background: #FFC107;
+    color: #1A1A2E;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #msg { margin-top: 14px; font-size: 14px; text-align: center; }
+  .success { color: #4CAF50; }
+  .error { color: #FF5252; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Reset Your Password</h1>
+    <p>Enter a new password for your EthioExit account.</p>
+    <input type="password" id="password" placeholder="New password (min 6 characters)" />
+    <input type="password" id="confirm" placeholder="Confirm new password" />
+    <button id="submitBtn">Update Password</button>
+    <div id="msg"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('submitBtn');
+
+    btn.addEventListener('click', async () => {
+      const password = document.getElementById('password').value;
+      const confirm = document.getElementById('confirm').value;
+
+      if (password.length < 6) {
+        msg.textContent = 'Password must be at least 6 characters.';
+        msg.className = 'error';
+        return;
+      }
+      if (password !== confirm) {
+        msg.textContent = 'Passwords do not match.';
+        msg.className = 'error';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        msg.textContent = error.message;
+        msg.className = 'error';
+        btn.disabled = false;
+        btn.textContent = 'Update Password';
+      } else {
+        msg.textContent = 'Password updated! You can now close this page and log in with your new password in the app.';
+        msg.className = 'success';
+        btn.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
