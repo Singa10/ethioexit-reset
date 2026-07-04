@@ -61,7 +61,7 @@
 <body>
   <div class="card">
     <h1>Reset Your Password</h1>
-    <p>Enter a new password for your EthioExit account.</p>
+    <p id="subtitle">Enter a new password for your EthioExit account.</p>
     <input type="password" id="password" placeholder="New password (min 6 characters)" />
     <input type="password" id="confirm" placeholder="Confirm new password" />
     <button id="submitBtn">Update Password</button>
@@ -74,24 +74,62 @@
 
     const msg = document.getElementById('msg');
     const btn = document.getElementById('submitBtn');
+    const subtitle = document.getElementById('subtitle');
+
+    let supabaseClient;
+    let sessionReady = false;
 
     function showError(text) {
       msg.textContent = text;
       msg.className = 'error';
     }
 
-    if (typeof window.supabase === 'undefined') {
-      showError('Could not load required library. Check your internet connection and reload this page.');
+    async function init() {
+      if (typeof window.supabase === 'undefined') {
+        showError('Could not load required library. Check your internet connection and reload this page.');
+        btn.disabled = true;
+        return;
+      }
+
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Parse the recovery tokens Supabase puts in the URL hash
+      const hash = window.location.hash.startsWith('#')
+        ? window.location.hash.substring(1)
+        : window.location.hash;
+      const params = new URLSearchParams(hash);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      const type = params.get('type');
+
+      if (!access_token || !refresh_token) {
+        showError('This reset link is invalid or has expired. Please request a new one from the app.');
+        btn.disabled = true;
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+
+      if (error) {
+        showError('This reset link is invalid or has expired. Please request a new one from the app.');
+        btn.disabled = true;
+        return;
+      }
+
+      sessionReady = true;
     }
+
+    init();
 
     btn.addEventListener('click', async () => {
       try {
-        if (typeof window.supabase === 'undefined') {
-          showError('Library failed to load. Please reload the page.');
+        if (!sessionReady) {
+          showError('Session not ready yet. Please reload the page and try again.');
           return;
         }
-
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const password = document.getElementById('password').value;
         const confirm = document.getElementById('confirm').value;
@@ -118,6 +156,7 @@
           msg.textContent = 'Password updated! You can now close this page and log in with your new password in the app.';
           msg.className = 'success';
           btn.style.display = 'none';
+          subtitle.style.display = 'none';
         }
       } catch (e) {
         showError('Unexpected error: ' + (e && e.message ? e.message : String(e)));
