@@ -53,7 +53,7 @@
     cursor: pointer;
   }
   button:disabled { opacity: 0.6; cursor: not-allowed; }
-  #msg { margin-top: 14px; font-size: 14px; text-align: center; }
+  #msg { margin-top: 14px; font-size: 14px; text-align: center; word-break: break-word; }
   .success { color: #4CAF50; }
   .error { color: #FF5252; }
 </style>
@@ -69,43 +69,60 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
-    const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
-
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_URL = 'https://vcxbmzrkicspfskcskar.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_X2fAOzYRT7q-FRIRipIF1A_ymS3rMAY';
 
     const msg = document.getElementById('msg');
     const btn = document.getElementById('submitBtn');
 
+    function showError(text) {
+      msg.textContent = text;
+      msg.className = 'error';
+    }
+
+    if (typeof window.supabase === 'undefined') {
+      showError('Could not load required library. Check your internet connection and reload this page.');
+    }
+
     btn.addEventListener('click', async () => {
-      const password = document.getElementById('password').value;
-      const confirm = document.getElementById('confirm').value;
+      try {
+        if (typeof window.supabase === 'undefined') {
+          showError('Library failed to load. Please reload the page.');
+          return;
+        }
 
-      if (password.length < 6) {
-        msg.textContent = 'Password must be at least 6 characters.';
-        msg.className = 'error';
-        return;
-      }
-      if (password !== confirm) {
-        msg.textContent = 'Passwords do not match.';
-        msg.className = 'error';
-        return;
-      }
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      btn.disabled = true;
-      btn.textContent = 'Updating...';
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm').value;
 
-      const { error } = await supabase.auth.updateUser({ password });
+        if (password.length < 6) {
+          showError('Password must be at least 6 characters.');
+          return;
+        }
+        if (password !== confirm) {
+          showError('Passwords do not match.');
+          return;
+        }
 
-      if (error) {
-        msg.textContent = error.message;
-        msg.className = 'error';
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+
+        const { error } = await supabaseClient.auth.updateUser({ password });
+
+        if (error) {
+          showError(error.message);
+          btn.disabled = false;
+          btn.textContent = 'Update Password';
+        } else {
+          msg.textContent = 'Password updated! You can now close this page and log in with your new password in the app.';
+          msg.className = 'success';
+          btn.style.display = 'none';
+        }
+      } catch (e) {
+        showError('Unexpected error: ' + (e && e.message ? e.message : String(e)));
         btn.disabled = false;
         btn.textContent = 'Update Password';
-      } else {
-        msg.textContent = 'Password updated! You can now close this page and log in with your new password in the app.';
-        msg.className = 'success';
-        btn.style.display = 'none';
       }
     });
   </script>
