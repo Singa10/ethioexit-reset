@@ -24,11 +24,7 @@
     max-width: 380px;
     width: 100%;
   }
-  h1 {
-    font-size: 20px;
-    margin-bottom: 8px;
-    color: #FFC107;
-  }
+  h1 { font-size: 20px; margin-bottom: 8px; color: #FFC107; }
   p { font-size: 14px; color: #ccc; margin-bottom: 20px; }
   input {
     width: 100%;
@@ -70,7 +66,7 @@
 
   <script>
     const SUPABASE_URL = 'https://vcxbmzrkicspfskcskar.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_X2fAOzYRT7q-FRIRipIF1A_ymS3rMAY';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjeGJtenJraWNzcGZza2Nza2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwNTIzMjcsImV4cCI6MjA5NDYyODMyN30.nqOMUwU81vwl88Dg43sQanU5HBywZh_Q8mR_QEgWGO4';
 
     const msg = document.getElementById('msg');
     const btn = document.getElementById('submitBtn');
@@ -92,15 +88,22 @@
 
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
+      const hash = window.location.hash.startsWith('#')
+        ? window.location.hash.substring(1)
+        : window.location.hash;
+      const params = new URLSearchParams(hash);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
 
-      if (!code) {
+      if (!access_token || !refresh_token) {
         showError('This reset link is invalid or has expired. Please request a new one from the app.');
         return;
       }
 
-      const { error } = await supabaseClient.auth.exchangeCodeForSession(code);
+      const { error } = await supabaseClient.auth.setSession({
+        access_token,
+        refresh_token,
+      });
 
       if (error) {
         showError('This reset link is invalid or has expired. Please request a new one from the app.');
