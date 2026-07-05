@@ -64,7 +64,7 @@
     <p id="subtitle">Enter a new password for your EthioExit account.</p>
     <input type="password" id="password" placeholder="New password (min 6 characters)" />
     <input type="password" id="confirm" placeholder="Confirm new password" />
-    <button id="submitBtn">Update Password</button>
+    <button id="submitBtn" disabled>Verifying link...</button>
     <div id="msg"></div>
   </div>
 
@@ -87,39 +87,29 @@
     async function init() {
       if (typeof window.supabase === 'undefined') {
         showError('Could not load required library. Check your internet connection and reload this page.');
-        btn.disabled = true;
         return;
       }
 
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      // Parse the recovery tokens Supabase puts in the URL hash
-      const hash = window.location.hash.startsWith('#')
-        ? window.location.hash.substring(1)
-        : window.location.hash;
-      const params = new URLSearchParams(hash);
-      const access_token = params.get('access_token');
-      const refresh_token = params.get('refresh_token');
-      const type = params.get('type');
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
 
-      if (!access_token || !refresh_token) {
+      if (!code) {
         showError('This reset link is invalid or has expired. Please request a new one from the app.');
-        btn.disabled = true;
         return;
       }
 
-      const { error } = await supabaseClient.auth.setSession({
-        access_token,
-        refresh_token,
-      });
+      const { error } = await supabaseClient.auth.exchangeCodeForSession(code);
 
       if (error) {
         showError('This reset link is invalid or has expired. Please request a new one from the app.');
-        btn.disabled = true;
         return;
       }
 
       sessionReady = true;
+      btn.disabled = false;
+      btn.textContent = 'Update Password';
     }
 
     init();
